@@ -26,15 +26,12 @@
 }
 
 /* ── Base ── */
-html, body { min-height: 100vh; }
+html { min-height: 100vh; background: #060402; }
+body { min-height: 100vh; }
 
 body {
   font-family: "Inter", system-ui, sans-serif;
-  background: var(--bg);
-  background-image:
-    radial-gradient(ellipse at 12% 10%, var(--g1) 0%, transparent 46%),
-    radial-gradient(ellipse at 88% 84%, var(--g2) 0%, transparent 46%),
-    radial-gradient(ellipse at 52% 48%, var(--g3) 0%, transparent 64%);
+  background: transparent;
   color: var(--text);
   padding: 40px 18px 80px;
 }
@@ -77,9 +74,9 @@ body {
 
 /* ── Glass card ── */
 .card {
-  background: var(--glass);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  background: rgba(20, 12, 6, 0.42);
+  backdrop-filter: blur(32px) saturate(1.2);
+  -webkit-backdrop-filter: blur(32px) saturate(1.2);
   border: 1px solid var(--border);
   border-radius: var(--r);
   padding: 22px;
