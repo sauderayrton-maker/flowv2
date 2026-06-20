@@ -87,7 +87,7 @@
       </div>
       <div class="chart-wrap chart-wrap-sm">
         <div class="chart-empty" id="barEmpty">
-          <span class="ci">▦</span>Add expenses to view
+          <span class="ci">▦</span>Add expenses or accounts to view
         </div>
         <canvas id="barChart"></canvas>
       </div>
@@ -138,7 +138,43 @@
 
   </div>
 
-  <!-- Row 4: Budget summary -->
+  <!-- Row 4: Add account + account list -->
+  <div class="grid col2">
+
+    <div class="card">
+      <div class="ctitle">Add Account</div>
+      <div class="field">
+        <label>Account Name</label>
+        <input type="text" id="acctName" placeholder="Emergency Fund, TFSA, Vacation…"
+               onkeydown="if(event.key==='Enter') addAccount()" />
+      </div>
+      <div class="field">
+        <label>Starting Balance ($)</label>
+        <input type="number" id="acctStart" placeholder="0.00" min="0" step="0.01" />
+      </div>
+      <div class="field">
+        <label>% of Net Income / Month</label>
+        <input type="number" id="acctPct" placeholder="e.g. 10" min="0" max="100" step="0.5"
+               onkeydown="if(event.key==='Enter') addAccount()" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="addAccount()">+ Add Account</button>
+    </div>
+
+    <div class="card">
+      <div class="lhdr">
+        <div class="ctitle">Savings Accounts</div>
+        <div class="lhdr-right">
+          <span class="lcount" id="acctCount">0 accounts</span>
+        </div>
+      </div>
+      <div class="acct-scroll" id="acctList">
+        <div class="empty-msg">No accounts yet — add one on the left.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 5: Budget summary -->
   <div class="grid">
     <div class="card">
       <div class="ctitle">Budget Summary</div>
@@ -146,22 +182,24 @@
 
         <div>
           <div class="sum-head">Monthly</div>
-          <div class="srow"><span class="slabel">Net Income</span>    <span class="ca" id="smI">$0.00</span></div>
-          <div class="srow"><span class="slabel">Taxes Paid</span>    <span class="cr" id="smT">$0.00</span></div>
-          <div class="srow"><span class="slabel">Total Expenses</span><span class="cr" id="smE">$0.00</span></div>
-          <div class="stotal"><span class="slabel">Remaining</span>   <span id="smR">$0.00</span></div>
+          <div class="srow"><span class="slabel">Net Income</span>        <span class="ca" id="smI">$0.00</span></div>
+          <div class="srow"><span class="slabel">Taxes Paid</span>        <span class="cr" id="smT">$0.00</span></div>
+          <div class="srow"><span class="slabel">Total Expenses</span>    <span class="cr" id="smE">$0.00</span></div>
+          <div class="srow"><span class="slabel">Savings Allocated</span> <span style="color:var(--amber)" id="smA">$0.00</span></div>
+          <div class="stotal"><span class="slabel">Remaining</span>       <span id="smR">$0.00</span></div>
           <div class="prog-wrap"><div class="prog-bar" id="pmB"></div></div>
-          <div class="prog-label"><span>Spent of net income</span><span id="pmP">0%</span></div>
+          <div class="prog-label"><span>Spent + saved of net income</span><span id="pmP">0%</span></div>
         </div>
 
         <div>
           <div class="sum-head">Yearly</div>
-          <div class="srow"><span class="slabel">Net Income</span>    <span class="ca" id="syI">$0.00</span></div>
-          <div class="srow"><span class="slabel">Taxes Paid</span>    <span class="cr" id="syT">$0.00</span></div>
-          <div class="srow"><span class="slabel">Total Expenses</span><span class="cr" id="syE">$0.00</span></div>
-          <div class="stotal"><span class="slabel">Remaining</span>   <span id="syR">$0.00</span></div>
+          <div class="srow"><span class="slabel">Net Income</span>        <span class="ca" id="syI">$0.00</span></div>
+          <div class="srow"><span class="slabel">Taxes Paid</span>        <span class="cr" id="syT">$0.00</span></div>
+          <div class="srow"><span class="slabel">Total Expenses</span>    <span class="cr" id="syE">$0.00</span></div>
+          <div class="srow"><span class="slabel">Savings Allocated</span> <span style="color:var(--amber)" id="syA">$0.00</span></div>
+          <div class="stotal"><span class="slabel">Remaining</span>       <span id="syR">$0.00</span></div>
           <div class="prog-wrap"><div class="prog-bar" id="pyB"></div></div>
-          <div class="prog-label"><span>Spent of net income</span><span id="pyP">0%</span></div>
+          <div class="prog-label"><span>Spent + saved of net income</span><span id="pyP">0%</span></div>
         </div>
 
       </div>
