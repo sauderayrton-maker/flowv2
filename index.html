@@ -5,827 +5,168 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flow — Budget Planner</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:      #0d110a;
-      --g1:      rgba(50, 88, 34, 0.32);
-      --g2:      rgba(76, 56, 22, 0.24);
-      --g3:      rgba(28, 60, 38, 0.18);
-      --glass:   rgba(20, 28, 14, 0.55);
-      --glass2:  rgba(24, 34, 16, 0.72);
-      --border:  rgba(120, 160, 80, 0.13);
-      --borderH: rgba(140, 185, 95, 0.26);
-      --text:    #cdd8c4;
-      --muted:   #596853;
-      --muted2:  #8a9e80;
-      --accent:  #7cb87c;
-      --accent2: #5fa08a;
-      --stone:   #9aaa8a;
-      --red:     #b85a48;
-      --amber:   #b88040;
-      --r:       18px;
-      --rS:      12px;
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes breathe {
-      0%, 100% { opacity: .75; }
-      50%       { opacity: 1;   }
-    }
-
-    html, body { min-height: 100vh; }
-
-    body {
-      font-family: "Inter", system-ui, sans-serif;
-      background: var(--bg);
-      background-image:
-        radial-gradient(ellipse at 12% 12%, var(--g1) 0%, transparent 46%),
-        radial-gradient(ellipse at 88% 82%, var(--g2) 0%, transparent 46%),
-        radial-gradient(ellipse at 52% 48%, var(--g3) 0%, transparent 64%);
-      color: var(--text);
-      padding: 40px 18px 80px;
-    }
-
-    /* ── Header ── */
-    .hdr {
-      text-align: center;
-      margin-bottom: 48px;
-      animation: fadeUp .5s ease;
-    }
-    .hdr h1 {
-      font-size: 3rem;
-      font-weight: 800;
-      letter-spacing: -2px;
-      background: linear-gradient(135deg, #c8dca8 0%, #7cb87c 45%, #5fa08a 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 8px;
-    }
-    .hdr p {
-      color: var(--muted2);
-      font-size: .9rem;
-      letter-spacing: .04em;
-    }
-
-    /* ── Grid ── */
-    .grid {
-      display: grid;
-      gap: 14px;
-      max-width: 1160px;
-      margin: 0 auto;
-    }
-    .col2 { grid-template-columns: 1fr 1fr; }
-    @media (max-width: 800px) { .col2 { grid-template-columns: 1fr; } }
-    .grid + .grid { margin-top: 14px; }
-
-    /* ── Glass card ── */
-    .card {
-      background: var(--glass);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      border: 1px solid var(--border);
-      border-radius: var(--r);
-      padding: 22px;
-      position: relative;
-      overflow: hidden;
-      animation: fadeUp .5s ease both;
-      transition: border-color .2s, box-shadow .2s;
-      box-shadow:
-        0 2px 12px rgba(0,0,0,.3),
-        inset 0 1px 0 rgba(160,200,110,.07);
-    }
-    .card::before {
-      content: '';
-      position: absolute; inset: 0;
-      border-radius: var(--r);
-      background: linear-gradient(145deg, rgba(140,190,90,.05) 0%, transparent 50%);
-      pointer-events: none;
-    }
-    .card:hover {
-      border-color: var(--borderH);
-      box-shadow: 0 6px 28px rgba(0,0,0,.4), inset 0 1px 0 rgba(160,200,110,.1);
-    }
-
-    .card:nth-child(1) { animation-delay: .05s; }
-    .card:nth-child(2) { animation-delay: .10s; }
-    .card:nth-child(3) { animation-delay: .15s; }
-    .card:nth-child(4) { animation-delay: .20s; }
-    .card:nth-child(5) { animation-delay: .25s; }
-    .card:nth-child(6) { animation-delay: .30s; }
-
-    .ctitle {
-      font-size: .68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      color: var(--muted);
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .ctitle::before {
-      content: '';
-      width: 3px; height: 12px;
-      background: linear-gradient(to bottom, var(--accent), var(--accent2));
-      border-radius: 2px;
-      display: inline-block;
-    }
-
-    /* ── Forms ── */
-    .field { display: flex; flex-direction: column; gap: 5px; margin-top: 14px; }
-    .field:first-child { margin-top: 0; }
-
-    .field label {
-      font-size: .70rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: var(--muted);
-    }
-
-    input, select {
-      width: 100%;
-      padding: 9px 13px;
-      background: rgba(10,16,6,.55);
-      border: 1px solid var(--border);
-      border-radius: var(--rS);
-      color: var(--text);
-      font-size: .93rem;
-      font-family: "Inter", sans-serif;
-      transition: border-color .15s, box-shadow .15s, background .15s;
-    }
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-      background: rgba(10,16,6,.75);
-      box-shadow: 0 0 0 3px rgba(124,184,124,.13);
-    }
-    input:hover:not(:focus), select:hover:not(:focus) {
-      border-color: var(--borderH);
-    }
-    input[type=number] { -moz-appearance: textfield; }
-    input[type=number]::-webkit-inner-spin-button { display: none; }
-    select option { background: #1a2412; }
-
-    /* ── Buttons ── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 9px 18px;
-      border: none;
-      border-radius: var(--rS);
-      font-size: .82rem;
-      font-weight: 600;
-      letter-spacing: .04em;
-      cursor: pointer;
-      font-family: "Inter", sans-serif;
-      transition: all .15s;
-    }
-    .btn:active { transform: scale(.97); }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #0d110a;
-      box-shadow: 0 3px 12px rgba(95,160,138,.22);
-    }
-    .btn-primary:hover {
-      box-shadow: 0 5px 18px rgba(95,160,138,.38);
-      transform: translateY(-1px);
-    }
-
-    .btn-ghost {
-      background: rgba(124,184,124,.08);
-      color: var(--accent);
-      border: 1px solid rgba(124,184,124,.2);
-    }
-    .btn-ghost:hover { background: rgba(124,184,124,.15); }
-
-    .btn-del {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      padding: 4px 9px;
-      font-size: .75rem;
-      border-radius: 8px;
-    }
-    .btn-del:hover { color: var(--red); border-color: rgba(184,90,72,.4); }
-
-    .btn-full { width: 100%; margin-top: 16px; }
-
-    /* ── Toggle ── */
-    .tgroup {
-      display: inline-flex;
-      background: rgba(10,16,6,.5);
-      border: 1px solid var(--border);
-      border-radius: 50px;
-      padding: 3px;
-    }
-    .tbtn {
-      padding: 4px 16px;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      border-radius: 50px;
-      cursor: pointer;
-      font-size: .75rem;
-      font-weight: 600;
-      letter-spacing: .04em;
-      font-family: "Inter", sans-serif;
-      transition: all .15s;
-    }
-    .tbtn.active {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #0d110a;
-    }
-
-    /* ── Stats ── */
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat {
-      background: rgba(10,16,6,.5);
-      border: 1px solid var(--border);
-      border-radius: var(--rS);
-      padding: 13px 15px;
-      transition: border-color .2s, transform .2s;
-    }
-    .stat:hover { border-color: var(--borderH); transform: translateY(-1px); }
-    .stat-label {
-      font-size: .63rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: var(--muted);
-      margin-bottom: 5px;
-    }
-    .stat-value { font-size: 1.18rem; font-weight: 700; letter-spacing: -.5px; }
-    .stat-sub   { font-size: .68rem; color: var(--muted); margin-top: 3px; }
-
-    .ca { color: var(--accent); }
-    .cr { color: var(--red);    }
-    .cs { color: var(--stone);  }
-
-    /* ── Expense list ── */
-    .expense-scroll {
-      display: flex; flex-direction: column; gap: 6px;
-      max-height: 320px; overflow-y: auto; padding-right: 2px;
-    }
-    .expense-scroll::-webkit-scrollbar { width: 3px; }
-    .expense-scroll::-webkit-scrollbar-track { background: transparent; }
-    .expense-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    .eitem {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(10,16,6,.45);
-      border: 1px solid var(--border);
-      border-radius: var(--rS);
-      padding: 10px 13px;
-      transition: all .18s;
-    }
-    .eitem:hover { border-color: var(--borderH); background: rgba(14,22,8,.6); transform: translateX(3px); }
-    .edot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .ename { font-size: .88rem; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ebadge {
-      font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-      padding: 2px 8px; border-radius: 50px;
-      background: rgba(10,16,6,.5); border: 1px solid var(--border); color: var(--muted);
-      flex-shrink: 0;
-    }
-    .eamt  { font-size: .88rem; font-weight: 700; color: var(--accent); text-align: right; }
-    .esub  { font-size: .65rem; color: var(--muted); text-align: right; }
-
-    .lhdr {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 14px; flex-wrap: wrap; gap: 6px;
-    }
-    .lcount {
-      font-size: .68rem; color: var(--muted);
-      background: rgba(10,16,6,.5); padding: 3px 10px;
-      border-radius: 50px; border: 1px solid var(--border);
-    }
-    .empty-msg {
-      text-align: center; color: var(--muted); font-size: .82rem; padding: 30px 0; letter-spacing: .03em;
-    }
-
-    /* ── Charts ── */
-    .chart-wrap { position: relative; min-height: 250px; }
-    .chart-empty {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      color: var(--muted); font-size: .78rem; letter-spacing: .05em; gap: 8px; pointer-events: none;
-    }
-    .chart-empty .ci { font-size: 1.8rem; opacity: .2; }
-
-    /* ── Summary ── */
-    .sum-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-    @media(max-width:580px){ .sum-cols { grid-template-columns: 1fr; } }
-
-    .sum-head {
-      font-size: .63rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em;
-      color: var(--muted); margin-bottom: 12px; padding-bottom: 9px;
-      border-bottom: 1px solid var(--border);
-    }
-    .srow {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 0; font-size: .85rem;
-      border-bottom: 1px solid rgba(255,255,255,.03);
-    }
-    .srow:last-of-type { border-bottom: none; }
-    .slabel { color: var(--muted2); }
-    .stotal {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 0 3px; font-size: 1.05rem; font-weight: 700;
-      margin-top: 5px; border-top: 1px solid var(--border);
-    }
-    .stotal .slabel { color: var(--text); }
-
-    .prog-wrap {
-      margin-top: 12px; background: rgba(10,16,6,.5);
-      border-radius: 50px; height: 7px; overflow: hidden; border: 1px solid var(--border);
-    }
-    .prog-bar {
-      height: 100%; border-radius: 50px;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      transition: width .7s cubic-bezier(.4,0,.2,1), background .3s;
-    }
-    .prog-label {
-      display: flex; justify-content: space-between;
-      font-size: .68rem; color: var(--muted); margin-top: 5px;
-    }
-
-    /* OT note */
-    .otnote {
-      font-size: .75rem; color: var(--muted2);
-      padding: 8px 12px; background: rgba(10,16,6,.5);
-      border: 1px solid var(--border); border-left: 2px solid var(--accent2);
-      border-radius: var(--rS); margin-top: 14px; display: none; line-height: 1.6;
-    }
-  </style>
+  <script src="main.js" defer></script>
 </head>
 <body>
 
-<div class="hdr">
-  <h1>Flow</h1>
-  <p>Personal budget tracker</p>
-</div>
-
-<div class="grid col2">
-
-  <!-- Income Config -->
-  <div class="card">
-    <div class="ctitle">Income</div>
-    <div class="field">
-      <label>Hourly Wage ($)</label>
-      <input type="number" id="wage" placeholder="25.00" min="0" step="0.01" oninput="recalculate()" />
-    </div>
-    <div class="field">
-      <label>Hours Per Week</label>
-      <input type="number" id="hours" placeholder="40" min="0" step="0.5" oninput="recalculate()" />
-    </div>
-    <div class="field">
-      <label>Tax Rate (%)</label>
-      <input type="number" id="taxRate" value="22" min="0" max="100" step="0.1" oninput="recalculate()" />
-    </div>
-    <div class="otnote" id="otNote"></div>
+  <div class="hdr">
+    <h1>Flow</h1>
+    <p>Personal budget tracker</p>
   </div>
 
-  <!-- Stats -->
-  <div class="card">
-    <div class="ctitle">Summary</div>
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-label">Weekly Gross</div>
-        <div class="stat-value ca" id="wGross">$0.00</div>
-        <div class="stat-sub" id="wOT">—</div>
+  <!-- Row 1: Income config + stats -->
+  <div class="grid col2">
+
+    <div class="card">
+      <div class="ctitle">Income</div>
+      <div class="field">
+        <label>Hourly Wage ($)</label>
+        <input type="number" id="wage" placeholder="25.00" min="0" step="0.01" oninput="recalculate()" />
       </div>
-      <div class="stat">
-        <div class="stat-label">Weekly Net</div>
-        <div class="stat-value ca" id="wNet">$0.00</div>
-        <div class="stat-sub">after tax</div>
+      <div class="field">
+        <label>Hours Per Week</label>
+        <input type="number" id="hours" placeholder="40" min="0" step="0.5" oninput="recalculate()" />
       </div>
-      <div class="stat">
-        <div class="stat-label">Monthly Net</div>
-        <div class="stat-value ca" id="mNet">$0.00</div>
-        <div class="stat-sub" id="mGSub">—</div>
+      <div class="field">
+        <label>Tax Rate (%)</label>
+        <input type="number" id="taxRate" value="22" min="0" max="100" step="0.1" oninput="recalculate()" />
       </div>
-      <div class="stat">
-        <div class="stat-label">Yearly Net</div>
-        <div class="stat-value ca" id="yNet">$0.00</div>
-        <div class="stat-sub" id="yGSub">—</div>
+      <div class="otnote" id="otNote"></div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">Summary</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Weekly Gross</div>
+          <div class="stat-value ca" id="wGross">$0.00</div>
+          <div class="stat-sub" id="wOT">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Weekly Net</div>
+          <div class="stat-value ca" id="wNet">$0.00</div>
+          <div class="stat-sub">after tax</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Monthly Net</div>
+          <div class="stat-value ca" id="mNet">$0.00</div>
+          <div class="stat-sub" id="mGSub">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Yearly Net</div>
+          <div class="stat-value ca" id="yNet">$0.00</div>
+          <div class="stat-sub" id="yGSub">—</div>
+        </div>
       </div>
     </div>
+
   </div>
 
-</div>
+  <!-- Row 2: Charts -->
+  <div class="grid col2">
 
-<div class="grid col2">
-
-  <!-- Donut Chart -->
-  <div class="card">
-    <div class="ctitle">Allocation</div>
-    <div class="chart-wrap">
-      <div class="chart-empty" id="donutEmpty">
-        <span class="ci">◎</span>Enter income to view
-      </div>
-      <canvas id="donutChart"></canvas>
-    </div>
-  </div>
-
-  <!-- Bar Chart -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-      <div class="ctitle" style="margin-bottom:0">Breakdown</div>
-      <div class="tgroup">
-        <button class="tbtn active" id="cvM" onclick="setChartView('monthly')">Monthly</button>
-        <button class="tbtn"        id="cvY" onclick="setChartView('yearly')">Yearly</button>
+    <div class="card">
+      <div class="ctitle">Allocation</div>
+      <div class="chart-wrap">
+        <div class="chart-empty" id="donutEmpty">
+          <span class="ci">◎</span>Enter income to view
+        </div>
+        <canvas id="donutChart"></canvas>
       </div>
     </div>
-    <div class="chart-wrap" style="min-height:230px;">
-      <div class="chart-empty" id="barEmpty">
-        <span class="ci">▦</span>Add expenses to view
-      </div>
-      <canvas id="barChart"></canvas>
-    </div>
-  </div>
 
-</div>
-
-<div class="grid col2">
-
-  <!-- Add Expense -->
-  <div class="card">
-    <div class="ctitle">Add Expense</div>
-    <div class="field">
-      <label>Name</label>
-      <input type="text" id="expName" placeholder="Rent, Groceries, Streaming…" onkeydown="if(event.key==='Enter')addExpense()" />
-    </div>
-    <div class="field">
-      <label>Amount ($)</label>
-      <input type="number" id="expAmt" placeholder="0.00" min="0" step="0.01" onkeydown="if(event.key==='Enter')addExpense()" />
-    </div>
-    <div class="field">
-      <label>Frequency</label>
-      <select id="expFreq">
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-      </select>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="addExpense()">+ Add Expense</button>
-  </div>
-
-  <!-- Expense List -->
-  <div class="card">
-    <div class="lhdr">
-      <div class="ctitle" style="margin-bottom:0">Expenses</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span class="lcount" id="eCount">0 items</span>
+    <div class="card">
+      <div class="card-header">
+        <div class="ctitle">Breakdown</div>
         <div class="tgroup">
-          <button class="tbtn active" id="vM" onclick="setView('monthly')">Monthly</button>
-          <button class="tbtn"        id="vY" onclick="setView('yearly')">Yearly</button>
+          <button class="tbtn active" id="cvM" onclick="setChartView('monthly')">Monthly</button>
+          <button class="tbtn"        id="cvY" onclick="setChartView('yearly')">Yearly</button>
         </div>
       </div>
-    </div>
-    <div class="expense-scroll" id="eList">
-      <div class="empty-msg">No expenses yet — add one on the left.</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- Budget Summary -->
-<div class="grid" style="margin-top:14px;">
-  <div class="card">
-    <div class="ctitle">Budget Summary</div>
-    <div class="sum-cols">
-      <div>
-        <div class="sum-head">Monthly</div>
-        <div class="srow"><span class="slabel">Net Income</span>    <span class="ca" id="smI">$0.00</span></div>
-        <div class="srow"><span class="slabel">Taxes Paid</span>    <span class="cr" id="smT">$0.00</span></div>
-        <div class="srow"><span class="slabel">Total Expenses</span><span class="cr" id="smE">$0.00</span></div>
-        <div class="stotal"><span class="slabel">Remaining</span>   <span id="smR">$0.00</span></div>
-        <div class="prog-wrap"><div class="prog-bar" id="pmB"></div></div>
-        <div class="prog-label"><span>Spent of net income</span><span id="pmP">0%</span></div>
-      </div>
-      <div>
-        <div class="sum-head">Yearly</div>
-        <div class="srow"><span class="slabel">Net Income</span>    <span class="ca" id="syI">$0.00</span></div>
-        <div class="srow"><span class="slabel">Taxes Paid</span>    <span class="cr" id="syT">$0.00</span></div>
-        <div class="srow"><span class="slabel">Total Expenses</span><span class="cr" id="syE">$0.00</span></div>
-        <div class="stotal"><span class="slabel">Remaining</span>   <span id="syR">$0.00</span></div>
-        <div class="prog-wrap"><div class="prog-bar" id="pyB"></div></div>
-        <div class="prog-label"><span>Spent of net income</span><span id="pyP">0%</span></div>
+      <div class="chart-wrap chart-wrap-sm">
+        <div class="chart-empty" id="barEmpty">
+          <span class="ci">▦</span>Add expenses to view
+        </div>
+        <canvas id="barChart"></canvas>
       </div>
     </div>
+
   </div>
-</div>
 
-<script>
-  const COLORS = [
-    '#7cb87c','#5fa08a','#b88040','#8a6ab8',
-    '#6a9ab8','#b85a48','#7ab8a0','#a8b870',
-    '#b89060','#6a7ab8','#b87090','#78a868'
-  ];
+  <!-- Row 3: Add expense + expense list -->
+  <div class="grid col2">
 
-  let expenses  = [];
-  let listView  = 'monthly';
-  let chartView = 'monthly';
-  let income    = {};
-  let donutChart = null;
-  let barChart   = null;
+    <div class="card">
+      <div class="ctitle">Add Expense</div>
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="expName" placeholder="Rent, Groceries, Streaming…"
+               onkeydown="if(event.key==='Enter') addExpense()" />
+      </div>
+      <div class="field">
+        <label>Amount ($)</label>
+        <input type="number" id="expAmt" placeholder="0.00" min="0" step="0.01"
+               onkeydown="if(event.key==='Enter') addExpense()" />
+      </div>
+      <div class="field">
+        <label>Frequency</label>
+        <select id="expFreq">
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="addExpense()">+ Add Expense</button>
+    </div>
 
-  Chart.defaults.color       = '#596853';
-  Chart.defaults.font.family = '"Inter", system-ui, sans-serif';
+    <div class="card">
+      <div class="lhdr">
+        <div class="ctitle">Expenses</div>
+        <div class="lhdr-right">
+          <span class="lcount" id="eCount">0 items</span>
+          <div class="tgroup">
+            <button class="tbtn active" id="vM" onclick="setView('monthly')">Monthly</button>
+            <button class="tbtn"        id="vY" onclick="setView('yearly')">Yearly</button>
+          </div>
+        </div>
+      </div>
+      <div class="expense-scroll" id="eList">
+        <div class="empty-msg">No expenses yet — add one on the left.</div>
+      </div>
+    </div>
 
-  // ── Persistence ──────────────────────────────────────────────
-  function persist() {
-    localStorage.setItem('flow_exp',  JSON.stringify(expenses));
-    localStorage.setItem('flow_wage', g('wage').value    || '');
-    localStorage.setItem('flow_hrs',  g('hours').value   || '');
-    localStorage.setItem('flow_tax',  g('taxRate').value || '22');
-  }
-  function restore() {
-    const w = ls('flow_wage'), h = ls('flow_hrs'), t = ls('flow_tax'), e = ls('flow_exp');
-    if (w) g('wage').value    = w;
-    if (h) g('hours').value   = h;
-    g('taxRate').value = t !== null ? t : 22;
-    if (e) { try { expenses = JSON.parse(e); } catch(_){} }
-  }
-  const ls = k => localStorage.getItem(k);
-  const g  = id => document.getElementById(id);
-  const fmt = n => '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  </div>
 
-  // ── Income ───────────────────────────────────────────────────
-  function recalculate() {
-    const wage    = parseFloat(g('wage').value)    || 0;
-    const hours   = parseFloat(g('hours').value)   || 0;
-    const taxRate = parseFloat(g('taxRate').value) / 100 || 0.22;
-    const reg    = Math.min(hours, 40);
-    const ot     = Math.max(hours - 40, 0);
-    const wGross = reg * wage + ot * wage * 1.5;
-    const aGross = wGross * 52;
-    const aTax   = aGross * taxRate;
-    const aNet   = aGross - aTax;
-    const wNet   = aNet / 52;
-    const mGross = aGross / 12;
-    const mNet   = aNet  / 12;
-    const mTax   = aTax  / 12;
+  <!-- Row 4: Budget summary -->
+  <div class="grid">
+    <div class="card">
+      <div class="ctitle">Budget Summary</div>
+      <div class="sum-cols">
 
-    income = { wGross, wNet, mGross, mNet, aGross, aNet, aTax, mTax };
-
-    const note = g('otNote');
-    if (ot > 0) {
-      note.style.display = 'block';
-      note.textContent = `⚡ ${ot}h overtime @ $${(wage*1.5).toFixed(2)}/h — adds ${fmt(ot*wage*1.5*52)} gross/yr`;
-    } else {
-      note.style.display = 'none';
-    }
-
-    txt('wGross', fmt(wGross));
-    txt('wNet',   fmt(wNet));
-    txt('wOT',   ot > 0 ? `incl. ${ot}h @ 1.5× OT` : hours > 0 ? `${hours}h × $${wage.toFixed(2)}` : '—');
-    txt('mNet',  fmt(mNet));
-    txt('yNet',  fmt(aNet));
-    txt('mGSub', mGross > 0 ? `${fmt(mGross)} gross` : '—');
-    txt('yGSub', aGross > 0 ? `${fmt(aGross)} gross` : '—');
-
-    persist();
-    renderSummary();
-    updateCharts();
-  }
-
-  // ── Expenses ─────────────────────────────────────────────────
-  function addExpense() {
-    const name = g('expName').value.trim();
-    const amt  = parseFloat(g('expAmt').value);
-    const freq = g('expFreq').value;
-    if (!name || isNaN(amt) || amt <= 0) { flash('expName'); flash('expAmt'); return; }
-    expenses.push({ id: Date.now(), name, amount: amt, freq });
-    g('expName').value = g('expAmt').value = '';
-    persist(); renderExpenses(); renderSummary(); updateCharts();
-  }
-
-  function removeExpense(id) {
-    expenses = expenses.filter(e => e.id !== id);
-    persist(); renderExpenses(); renderSummary(); updateCharts();
-  }
-
-  function flash(id) {
-    const el = g(id);
-    el.style.borderColor = 'rgba(184,90,72,.7)';
-    el.style.boxShadow   = '0 0 0 3px rgba(184,90,72,.14)';
-    setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 1400);
-  }
-
-  function setView(v) {
-    listView = v;
-    g('vM').classList.toggle('active', v === 'monthly');
-    g('vY').classList.toggle('active', v === 'yearly');
-    renderExpenses();
-  }
-
-  function setChartView(v) {
-    chartView = v;
-    g('cvM').classList.toggle('active', v === 'monthly');
-    g('cvY').classList.toggle('active', v === 'yearly');
-    updateBarChart();
-  }
-
-  function renderExpenses() {
-    const list = g('eList');
-    g('eCount').textContent = `${expenses.length} item${expenses.length !== 1 ? 's' : ''}`;
-    if (!expenses.length) {
-      list.innerHTML = '<div class="empty-msg">No expenses yet — add one on the left.</div>';
-      return;
-    }
-    list.innerHTML = expenses.map((e, i) => {
-      const col  = COLORS[i % COLORS.length];
-      const disp = listView === 'monthly'
-        ? (e.freq === 'monthly' ? e.amount : e.amount / 12)
-        : (e.freq === 'yearly'  ? e.amount : e.amount * 12);
-      const alt  = listView === 'monthly'
-        ? (e.freq === 'monthly' ? e.amount * 12 : e.amount)
-        : (e.freq === 'yearly'  ? e.amount / 12  : e.amount);
-      const altU = listView === 'monthly' ? '/yr' : '/mo';
-      return `
-      <div class="eitem">
-        <span class="edot" style="background:${col}"></span>
-        <span class="ename">${esc(e.name)}</span>
-        <span class="ebadge">${e.freq === 'monthly' ? 'mo' : 'yr'}</span>
         <div>
-          <div class="eamt">${fmt(disp)}<span style="font-size:.62rem;font-weight:400;color:var(--muted)">/${listView === 'monthly' ? 'mo' : 'yr'}</span></div>
-          <div class="esub">${fmt(alt)}${altU}</div>
+          <div class="sum-head">Monthly</div>
+          <div class="srow"><span class="slabel">Net Income</span>    <span class="ca" id="smI">$0.00</span></div>
+          <div class="srow"><span class="slabel">Taxes Paid</span>    <span class="cr" id="smT">$0.00</span></div>
+          <div class="srow"><span class="slabel">Total Expenses</span><span class="cr" id="smE">$0.00</span></div>
+          <div class="stotal"><span class="slabel">Remaining</span>   <span id="smR">$0.00</span></div>
+          <div class="prog-wrap"><div class="prog-bar" id="pmB"></div></div>
+          <div class="prog-label"><span>Spent of net income</span><span id="pmP">0%</span></div>
         </div>
-        <button class="btn btn-del" onclick="removeExpense(${e.id})">✕</button>
-      </div>`;
-    }).join('');
-  }
 
-  // ── Summary ──────────────────────────────────────────────────
-  function renderSummary() {
-    const mExp = expenses.reduce((s,e) => s + (e.freq === 'monthly' ? e.amount : e.amount / 12), 0);
-    const yExp = mExp * 12;
-    const mRem = income.mNet - mExp;
-    const yRem = income.aNet  - yExp;
-    const mPct = income.mNet > 0 ? Math.min(mExp / income.mNet * 100, 100) : 0;
-    const yPct = income.aNet  > 0 ? Math.min(yExp / income.aNet  * 100, 100) : 0;
-    const pc   = p => p > 90 ? 'var(--red)' : p > 70 ? 'var(--amber)' : 'var(--accent)';
-    const rc   = v => v >= 0 ? 'var(--accent)' : 'var(--red)';
+        <div>
+          <div class="sum-head">Yearly</div>
+          <div class="srow"><span class="slabel">Net Income</span>    <span class="ca" id="syI">$0.00</span></div>
+          <div class="srow"><span class="slabel">Taxes Paid</span>    <span class="cr" id="syT">$0.00</span></div>
+          <div class="srow"><span class="slabel">Total Expenses</span><span class="cr" id="syE">$0.00</span></div>
+          <div class="stotal"><span class="slabel">Remaining</span>   <span id="syR">$0.00</span></div>
+          <div class="prog-wrap"><div class="prog-bar" id="pyB"></div></div>
+          <div class="prog-label"><span>Spent of net income</span><span id="pyP">0%</span></div>
+        </div>
 
-    styl('smI', fmt(income.mNet  || 0), 'var(--accent)');
-    styl('smT', fmt(income.mTax  || 0), 'var(--red)');
-    styl('smE', fmt(mExp),              'var(--red)');
-    styl('smR', fmt(mRem),              rc(mRem));
-    styl('syI', fmt(income.aNet  || 0), 'var(--accent)');
-    styl('syT', fmt(income.aTax  || 0), 'var(--red)');
-    styl('syE', fmt(yExp),              'var(--red)');
-    styl('syR', fmt(yRem),              rc(yRem));
+      </div>
+    </div>
+  </div>
 
-    setBar('pmB','pmP', mPct, pc(mPct));
-    setBar('pyB','pyP', yPct, pc(yPct));
-  }
-
-  function txt(id, v)    { g(id).textContent = v; }
-  function styl(id,v,c)  { const e=g(id); e.textContent=v; e.style.color=c; }
-  function setBar(b,p,pct,clr) {
-    const bar = g(b); bar.style.width = pct+'%';
-    if (pct > 90) bar.style.background = 'var(--red)';
-    else if (pct > 70) bar.style.background = 'var(--amber)';
-    else bar.style.background = 'linear-gradient(90deg, var(--accent), var(--accent2))';
-    const pe = g(p); pe.textContent = pct.toFixed(1)+'%'; pe.style.color = clr;
-  }
-
-  // ── Charts ───────────────────────────────────────────────────
-  const TT = {
-    backgroundColor: 'rgba(14,20,10,.92)',
-    borderColor: 'rgba(120,160,80,.18)',
-    borderWidth: 1,
-    titleColor: '#cdd8c4',
-    bodyColor: '#8a9e80',
-    padding: 12,
-    cornerRadius: 10,
-    displayColors: true,
-  };
-
-  function updateCharts() { updateDonut(); updateBarChart(); }
-
-  function updateDonut() {
-    const yExp    = expenses.reduce((s,e) => s + (e.freq==='yearly' ? e.amount : e.amount*12), 0);
-    const aTax    = income.aTax || 0;
-    const aNet    = income.aNet || 0;
-    const savings = Math.max(aNet - yExp, 0);
-    const hasData = aTax > 0 || yExp > 0;
-
-    g('donutEmpty').style.display = hasData ? 'none' : 'flex';
-
-    const labels = ['Taxes', ...expenses.map(e=>e.name), savings > 0 ? 'Savings' : null].filter(Boolean);
-    const data   = [aTax, ...expenses.map(e=>e.freq==='yearly'?e.amount:e.amount*12), savings||null].filter(v=>v!==null);
-    const colors = [
-      'rgba(184,90,72,.8)',
-      ...expenses.map((_,i) => COLORS[(i+1) % COLORS.length]),
-      savings > 0 ? 'rgba(95,160,138,.8)' : null
-    ].filter(Boolean);
-
-    if (donutChart) {
-      donutChart.data.labels = labels;
-      donutChart.data.datasets[0].data = data;
-      donutChart.data.datasets[0].backgroundColor = colors;
-      donutChart.update(); return;
-    }
-
-    donutChart = new Chart(g('donutChart'), {
-      type: 'doughnut',
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: 'rgba(13,17,10,.6)', borderWidth: 2, hoverOffset: 10 }] },
-      options: {
-        responsive: true, maintainAspectRatio: true, cutout: '65%',
-        plugins: {
-          legend: { position: 'bottom', labels: { color:'#596853', boxWidth:8, boxHeight:8, padding:12, font:{size:10}, usePointStyle:true, pointStyle:'circle' } },
-          tooltip: { ...TT, callbacks: { label: ctx => {
-            const tot = ctx.dataset.data.reduce((a,b)=>a+b,0);
-            return `  ${fmt(ctx.parsed)}  (${tot>0?(ctx.parsed/tot*100).toFixed(1):0}%)`;
-          }}}
-        },
-        animation: { animateRotate: true, duration: 650 }
-      },
-      plugins: [{
-        id: 'center',
-        afterDraw(chart) {
-          const { ctx, chartArea:{left,right,top,bottom} } = chart;
-          const cx = (left+right)/2, cy = (top+bottom)/2;
-          const sav = Math.max((income.aNet||0) - expenses.reduce((s,e)=>s+(e.freq==='yearly'?e.amount:e.amount*12),0), 0);
-          ctx.save();
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillStyle = sav > 0 ? '#7cb87c' : '#596853';
-          ctx.font = `700 16px "Inter", sans-serif`;
-          ctx.fillText(fmt(sav), cx, cy - 8);
-          ctx.fillStyle = '#596853';
-          ctx.font = `500 10px "Inter", sans-serif`;
-          ctx.fillText('saved / yr', cx, cy + 10);
-          ctx.restore();
-        }
-      }]
-    });
-  }
-
-  function updateBarChart() {
-    const mult   = chartView === 'monthly' ? 1 : 12;
-    const unit   = chartView === 'monthly' ? '/mo' : '/yr';
-    const sorted = [...expenses]
-      .map(e => ({ name: e.name, amt: (e.freq==='monthly'?e.amount:e.amount/12)*mult }))
-      .sort((a,b) => b.amt - a.amt);
-
-    g('barEmpty').style.display = sorted.length ? 'none' : 'flex';
-
-    const labels = sorted.map(e=>e.name);
-    const data   = sorted.map(e=>e.amt);
-    const colors = sorted.map((_,i) => COLORS[(i+1) % COLORS.length]);
-
-    if (barChart) {
-      barChart.data.labels = labels;
-      barChart.data.datasets[0].data = data;
-      barChart.data.datasets[0].backgroundColor = colors;
-      barChart.update(); return;
-    }
-
-    barChart = new Chart(g('barChart'), {
-      type: 'bar',
-      data: { labels, datasets: [{ label:'Amount', data, backgroundColor: colors, borderRadius: 8, borderSkipped: false }] },
-      options: {
-        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { ...TT, callbacks: { label: ctx => `  ${fmt(ctx.parsed.x)} ${unit}` } }
-        },
-        scales: {
-          x: {
-            grid: { color: 'rgba(120,160,80,.07)' },
-            ticks: { color:'#596853', font:{size:10}, callback: v=>'$'+(v>=1000?(v/1000).toFixed(0)+'k':v) },
-            border: { display: false }
-          },
-          y: {
-            grid: { display: false },
-            ticks: { color:'#8a9e80', font:{size:10} },
-            border: { display: false }
-          }
-        },
-        animation: { duration: 500 }
-      }
-    });
-  }
-
-  // ── Boot ─────────────────────────────────────────────────────
-  restore();
-  recalculate();
-  renderExpenses();
-  updateCharts();
-</script>
 </body>
 </html>
