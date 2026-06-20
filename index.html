@@ -45,9 +45,9 @@
           <div class="stat-sub" id="wOT">—</div>
         </div>
         <div class="stat">
-          <div class="stat-label">Weekly Net</div>
-          <div class="stat-value ca" id="wNet">$0.00</div>
-          <div class="stat-sub">after tax</div>
+          <div class="stat-label">Biweekly Net</div>
+          <div class="stat-value ca" id="bwNet">$0.00</div>
+          <div class="stat-sub">per paycheck</div>
         </div>
         <div class="stat">
           <div class="stat-label">Monthly Net</div>
@@ -81,8 +81,9 @@
       <div class="card-header">
         <div class="ctitle">Breakdown</div>
         <div class="tgroup">
-          <button class="tbtn active" id="cvM" onclick="setChartView('monthly')">Monthly</button>
-          <button class="tbtn"        id="cvY" onclick="setChartView('yearly')">Yearly</button>
+          <button class="tbtn active" id="cvM"  onclick="setChartView('monthly')">Monthly</button>
+          <button class="tbtn"        id="cvBW" onclick="setChartView('biweekly')">2-Week</button>
+          <button class="tbtn"        id="cvY"  onclick="setChartView('yearly')">Yearly</button>
         </div>
       </div>
       <div class="chart-wrap chart-wrap-sm">
@@ -114,6 +115,7 @@
         <label>Frequency</label>
         <select id="expFreq">
           <option value="monthly">Monthly</option>
+          <option value="biweekly">Biweekly (every 2 weeks)</option>
           <option value="yearly">Yearly</option>
         </select>
       </div>
@@ -126,8 +128,9 @@
         <div class="lhdr-right">
           <span class="lcount" id="eCount">0 items</span>
           <div class="tgroup">
-            <button class="tbtn active" id="vM" onclick="setView('monthly')">Monthly</button>
-            <button class="tbtn"        id="vY" onclick="setView('yearly')">Yearly</button>
+            <button class="tbtn active" id="vM"  onclick="setView('monthly')">Monthly</button>
+            <button class="tbtn"        id="vBW" onclick="setView('biweekly')">2-Week</button>
+            <button class="tbtn"        id="vY"  onclick="setView('yearly')">Yearly</button>
           </div>
         </div>
       </div>
@@ -189,6 +192,17 @@
           <div class="stotal"><span class="slabel">Remaining</span>       <span id="smR">$0.00</span></div>
           <div class="prog-wrap"><div class="prog-bar" id="pmB"></div></div>
           <div class="prog-label"><span>Spent + saved of net income</span><span id="pmP">0%</span></div>
+        </div>
+
+        <div>
+          <div class="sum-head">Biweekly</div>
+          <div class="srow"><span class="slabel">Net Income</span>        <span class="ca" id="sbI">$0.00</span></div>
+          <div class="srow"><span class="slabel">Taxes Paid</span>        <span class="cr" id="sbT">$0.00</span></div>
+          <div class="srow"><span class="slabel">Total Expenses</span>    <span class="cr" id="sbE">$0.00</span></div>
+          <div class="srow"><span class="slabel">Savings Allocated</span> <span style="color:var(--amber)" id="sbA">$0.00</span></div>
+          <div class="stotal"><span class="slabel">Remaining</span>       <span id="sbR">$0.00</span></div>
+          <div class="prog-wrap"><div class="prog-bar" id="pbB"></div></div>
+          <div class="prog-label"><span>Spent + saved of biweekly net</span><span id="pbP">0%</span></div>
         </div>
 
         <div>

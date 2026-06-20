@@ -433,9 +433,12 @@ select option { background: #1e1208; }
 }
 
 /* ── Budget Summary ── */
-.sum-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.sum-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
 
-@media (max-width: 580px) {
+@media (max-width: 800px) {
+  .sum-cols { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 500px) {
   .sum-cols { grid-template-columns: 1fr; }
 }
 

@@ -67,6 +67,12 @@ const g   = id => document.getElementById(id);
 const fmt = n  => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = s  => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// Frequency converters — biweekly = 26 periods/year
+const toMonthly   = e => e.freq === 'monthly' ? e.amount : e.freq === 'biweekly' ? e.amount * 26 / 12 : e.amount / 12;
+const toYearly    = e => e.freq === 'yearly'  ? e.amount : e.freq === 'biweekly' ? e.amount * 26      : e.amount * 12;
+const toBiweekly  = e => e.freq === 'biweekly'? e.amount : e.freq === 'monthly'  ? e.amount * 12 / 26 : e.amount / 26;
+const toView      = (e, view) => view === 'monthly' ? toMonthly(e) : view === 'yearly' ? toYearly(e) : toBiweekly(e);
+
 function setText(id, value) {
   g(id).textContent = value;
 }
@@ -109,12 +115,14 @@ function recalculate() {
   const annualGross   = weeklyGross * 52;
   const annualTax     = annualGross * taxRate;
   const annualNet     = annualGross - annualTax;
-  const weeklyNet     = annualNet / 52;
+  const weeklyNet     = annualNet   / 52;
+  const biweeklyNet   = annualNet   / 26;
+  const biweeklyTax   = annualTax   / 26;
   const monthlyGross  = annualGross / 12;
   const monthlyNet    = annualNet   / 12;
   const monthlyTax    = annualTax   / 12;
 
-  income = { weeklyGross, weeklyNet, monthlyGross, monthlyNet, annualGross, annualNet, annualTax, monthlyTax };
+  income = { weeklyGross, weeklyNet, biweeklyNet, biweeklyTax, monthlyGross, monthlyNet, annualGross, annualNet, annualTax, monthlyTax };
 
   const otNote = g('otNote');
   if (overtimeHours > 0) {
@@ -125,7 +133,7 @@ function recalculate() {
   }
 
   setText('wGross', fmt(weeklyGross));
-  setText('wNet',   fmt(weeklyNet));
+  setText('bwNet',  fmt(biweeklyNet));
   setText('wOT', overtimeHours > 0
     ? `incl. ${overtimeHours}h @ 1.5× OT`
     : hours > 0 ? `${hours}h × $${wage.toFixed(2)}` : '—');
@@ -173,10 +181,14 @@ function removeExpense(id) {
 
 function setView(v) {
   listView = v;
-  g('vM').classList.toggle('active', v === 'monthly');
-  g('vY').classList.toggle('active', v === 'yearly');
+  g('vM').classList.toggle('active',  v === 'monthly');
+  g('vBW').classList.toggle('active', v === 'biweekly');
+  g('vY').classList.toggle('active',  v === 'yearly');
   renderExpenses();
 }
+
+const VIEW_UNIT = { monthly: 'mo', biweekly: '2wk', yearly: 'yr' };
+const VIEW_ALT  = { monthly: ['yr', toYearly], biweekly: ['mo', toMonthly], yearly: ['mo', toMonthly] };
 
 function renderExpenses() {
   const list = g('eList');
@@ -187,29 +199,23 @@ function renderExpenses() {
     return;
   }
 
+  const FREQ_LABEL = { monthly: 'mo', biweekly: '2wk', yearly: 'yr' };
+  const unit    = VIEW_UNIT[listView];
+  const [altUnit, altFn] = VIEW_ALT[listView];
+
   list.innerHTML = expenses.map((expense, i) => {
-    const color     = COLORS[i % COLORS.length];
-    const isMonthly = listView === 'monthly';
-
-    const displayAmt = isMonthly
-      ? (expense.freq === 'monthly' ? expense.amount : expense.amount / 12)
-      : (expense.freq === 'yearly'  ? expense.amount : expense.amount * 12);
-
-    const altAmt = isMonthly
-      ? (expense.freq === 'monthly' ? expense.amount * 12 : expense.amount)
-      : (expense.freq === 'yearly'  ? expense.amount / 12  : expense.amount);
-
-    const unit    = isMonthly ? 'mo' : 'yr';
-    const altUnit = isMonthly ? '/yr' : '/mo';
+    const color      = COLORS[i % COLORS.length];
+    const displayAmt = toView(expense, listView);
+    const altAmt     = altFn(expense);
 
     return `
       <div class="eitem">
         <span class="edot" style="background:${color}"></span>
         <span class="ename">${esc(expense.name)}</span>
-        <span class="ebadge">${expense.freq === 'monthly' ? 'mo' : 'yr'}</span>
+        <span class="ebadge">${FREQ_LABEL[expense.freq]}</span>
         <div class="eamt-wrap">
           <div class="eamt">${fmt(displayAmt)}<span class="eamt-unit">/${unit}</span></div>
-          <div class="esub">${fmt(altAmt)}${altUnit}</div>
+          <div class="esub">${fmt(altAmt)}/${altUnit}</div>
         </div>
         <button class="btn btn-del" onclick="removeExpense(${expense.id})">✕</button>
       </div>`;
@@ -288,39 +294,51 @@ function renderAccounts() {
 // ── Summary ──────────────────────────────────────────────────────────────────
 
 function renderSummary() {
-  const monthlyExpenses    = expenses.reduce((sum, e) =>
-    sum + (e.freq === 'monthly' ? e.amount : e.amount / 12), 0);
-  const yearlyExpenses     = monthlyExpenses * 12;
+  const monthlyExpenses    = expenses.reduce((sum, e) => sum + toMonthly(e),   0);
+  const biweeklyExpenses   = expenses.reduce((sum, e) => sum + toBiweekly(e),  0);
+  const yearlyExpenses     = expenses.reduce((sum, e) => sum + toYearly(e),    0);
 
-  const monthlyAllocations = accounts.reduce((sum, a) =>
-    sum + (income.monthlyNet || 0) * a.allocationPct / 100, 0);
+  const bwNet              = income.biweeklyNet || 0;
+  const monthlyAllocations = accounts.reduce((sum, a) => sum + (income.monthlyNet || 0) * a.allocationPct / 100, 0);
+  const biweeklyAllocations= accounts.reduce((sum, a) => sum + bwNet * a.allocationPct / 100, 0);
   const yearlyAllocations  = monthlyAllocations * 12;
 
-  const monthlySpent     = monthlyExpenses + monthlyAllocations;
-  const yearlySpent      = yearlyExpenses  + yearlyAllocations;
-  const monthlyRemaining = (income.monthlyNet || 0) - monthlySpent;
-  const yearlyRemaining  = (income.annualNet  || 0) - yearlySpent;
+  const monthlySpent      = monthlyExpenses  + monthlyAllocations;
+  const biweeklySpent     = biweeklyExpenses + biweeklyAllocations;
+  const yearlySpent       = yearlyExpenses   + yearlyAllocations;
 
-  const monthlyPct = income.monthlyNet > 0 ? Math.min(monthlySpent / income.monthlyNet * 100, 100) : 0;
-  const yearlyPct  = income.annualNet  > 0 ? Math.min(yearlySpent  / income.annualNet  * 100, 100) : 0;
+  const monthlyRemaining  = (income.monthlyNet || 0) - monthlySpent;
+  const biweeklyRemaining = bwNet - biweeklySpent;
+  const yearlyRemaining   = (income.annualNet  || 0) - yearlySpent;
+
+  const monthlyPct  = income.monthlyNet > 0 ? Math.min(monthlySpent  / income.monthlyNet * 100, 100) : 0;
+  const biweeklyPct = bwNet > 0             ? Math.min(biweeklySpent / bwNet             * 100, 100) : 0;
+  const yearlyPct   = income.annualNet  > 0 ? Math.min(yearlySpent   / income.annualNet  * 100, 100) : 0;
 
   const progressColor  = p => p > 90 ? 'var(--red)' : p > 70 ? 'var(--amber)' : 'var(--accent)';
   const remainingColor = v => v >= 0 ? 'var(--green)' : 'var(--red)';
 
-  setColored('smI', fmt(income.monthlyNet       || 0), 'var(--accent)');
-  setColored('smT', fmt(income.monthlyTax       || 0), 'var(--red)');
-  setColored('smE', fmt(monthlyExpenses),               'var(--red)');
-  setColored('smA', fmt(monthlyAllocations),            'var(--amber)');
-  setColored('smR', fmt(monthlyRemaining),              remainingColor(monthlyRemaining));
+  setColored('smI', fmt(income.monthlyNet  || 0), 'var(--accent)');
+  setColored('smT', fmt(income.monthlyTax  || 0), 'var(--red)');
+  setColored('smE', fmt(monthlyExpenses),           'var(--red)');
+  setColored('smA', fmt(monthlyAllocations),        'var(--amber)');
+  setColored('smR', fmt(monthlyRemaining),          remainingColor(monthlyRemaining));
 
-  setColored('syI', fmt(income.annualNet        || 0), 'var(--accent)');
-  setColored('syT', fmt(income.annualTax        || 0), 'var(--red)');
-  setColored('syE', fmt(yearlyExpenses),                'var(--red)');
-  setColored('syA', fmt(yearlyAllocations),             'var(--amber)');
-  setColored('syR', fmt(yearlyRemaining),               remainingColor(yearlyRemaining));
+  setColored('sbI', fmt(bwNet),                     'var(--accent)');
+  setColored('sbT', fmt(income.biweeklyTax || 0),  'var(--red)');
+  setColored('sbE', fmt(biweeklyExpenses),           'var(--red)');
+  setColored('sbA', fmt(biweeklyAllocations),        'var(--amber)');
+  setColored('sbR', fmt(biweeklyRemaining),          remainingColor(biweeklyRemaining));
 
-  setProgressBar('pmB', 'pmP', monthlyPct, progressColor(monthlyPct));
-  setProgressBar('pyB', 'pyP', yearlyPct,  progressColor(yearlyPct));
+  setColored('syI', fmt(income.annualNet   || 0),  'var(--accent)');
+  setColored('syT', fmt(income.annualTax   || 0),  'var(--red)');
+  setColored('syE', fmt(yearlyExpenses),             'var(--red)');
+  setColored('syA', fmt(yearlyAllocations),          'var(--amber)');
+  setColored('syR', fmt(yearlyRemaining),            remainingColor(yearlyRemaining));
+
+  setProgressBar('pmB', 'pmP', monthlyPct,  progressColor(monthlyPct));
+  setProgressBar('pbB', 'pbP', biweeklyPct, progressColor(biweeklyPct));
+  setProgressBar('pyB', 'pyP', yearlyPct,   progressColor(yearlyPct));
 }
 
 // ── Charts ───────────────────────────────────────────────────────────────────
@@ -331,8 +349,7 @@ function updateCharts() {
 }
 
 function updateDonut() {
-  const yearlyExpenses    = expenses.reduce((sum, e) =>
-    sum + (e.freq === 'yearly' ? e.amount : e.amount * 12), 0);
+  const yearlyExpenses    = expenses.reduce((sum, e) => sum + toYearly(e), 0);
   const yearlyAllocations = accounts.reduce((sum, a) =>
     sum + (income.monthlyNet || 0) * a.allocationPct / 100 * 12, 0);
 
@@ -352,7 +369,7 @@ function updateDonut() {
 
   const data = [
     annualTax,
-    ...expenses.map(e => e.freq === 'yearly' ? e.amount : e.amount * 12),
+    ...expenses.map(e => toYearly(e)),
     ...accounts.map(a => (income.monthlyNet || 0) * a.allocationPct / 100 * 12),
     unallocated > 0 ? unallocated : null,
   ].filter(v => v !== null);
@@ -433,24 +450,29 @@ function updateDonut() {
 
 function setChartView(v) {
   chartView = v;
-  g('cvM').classList.toggle('active', v === 'monthly');
-  g('cvY').classList.toggle('active', v === 'yearly');
+  g('cvM').classList.toggle('active',  v === 'monthly');
+  g('cvBW').classList.toggle('active', v === 'biweekly');
+  g('cvY').classList.toggle('active',  v === 'yearly');
   updateBarChart();
 }
 
 function updateBarChart() {
-  const multiplier = chartView === 'monthly' ? 1 : 12;
-  const unit       = chartView === 'monthly' ? '/mo' : '/yr';
+  const unit = VIEW_UNIT[chartView];
+
+  const acctMonthly = income.monthlyNet || 0;
+  const acctBasis   = chartView === 'yearly' ? acctMonthly * 12
+    : chartView === 'biweekly' ? acctMonthly * 12 / 26
+    : acctMonthly;
 
   const expenseRows = expenses.map((e, i) => ({
     name:  e.name,
-    amt:   (e.freq === 'monthly' ? e.amount : e.amount / 12) * multiplier,
+    amt:   toView(e, chartView),
     color: COLORS[(i + 2) % COLORS.length],
   }));
 
   const accountRows = accounts.map((a, i) => ({
     name:  a.name,
-    amt:   (income.monthlyNet || 0) * a.allocationPct / 100 * multiplier,
+    amt:   acctBasis * a.allocationPct / 100,
     color: ACCT_COLORS[i % ACCT_COLORS.length],
   }));
 
@@ -490,7 +512,7 @@ function updateBarChart() {
         legend: { display: false },
         tooltip: {
           ...TOOLTIP_STYLE,
-          callbacks: { label: ctx => `  ${fmt(ctx.parsed.x)} ${unit}` },
+          callbacks: { label: ctx => `  ${fmt(ctx.parsed.x)} /${unit}` },
         },
       },
       scales: {
